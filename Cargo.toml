@@ -1,0 +1,22 @@
+[package]
+name = "mem-allocs"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["c_allocator"]
+c_allocator = ["libc"]
+
+[dependencies]
+libc = { version = "0.2.161", optional = true }
+
+[lints.clippy]
+cognitive_complexity = "warn"
+dbg_macro = "warn"
+doc_markdown = "warn"
+nursery = "warn"
+pedantic = "warn"
+
+[lints.rust]
+unused_extern_crates = "warn"
+unused_import_braces = "warn"
