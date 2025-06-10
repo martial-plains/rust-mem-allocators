@@ -61,8 +61,8 @@ unsafe impl GlobalAlloc for CAllocator {
 ///
 /// Returns an `AllocError` if the allocation fails.
 fn allocate_memory(size: usize, alignment: usize) -> Result<*mut u8, AllocError> {
-    cfg_match! {
-        cfg(any(
+    cfg_select! {
+        any(
         target_os = "dragonfly",
         target_os = "netbsd",
         target_os = "freebsd",
@@ -70,7 +70,7 @@ fn allocate_memory(size: usize, alignment: usize) -> Result<*mut u8, AllocError>
         target_os = "openbsd",
         target_os = "linux",
         target_os = "macos",
-        )) => {
+        ) => {
             let ptr = {
             let mut temp_ptr: *mut u8 = ptr::null_mut();
             let result = unsafe {
