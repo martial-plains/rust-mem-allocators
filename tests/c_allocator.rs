@@ -6,7 +6,7 @@ mod common;
 #[cfg(feature = "c_allocator")]
 fn c_allocator() {
     use common::test_allocator;
-    use mem_allocs::c_allocator::CAllocator;
+    use mem_allocs::CAllocator;
 
     test_allocator(CAllocator).unwrap();
 }
@@ -15,7 +15,7 @@ fn c_allocator() {
 #[cfg(feature = "c_allocator")]
 fn raw_c_allocator() {
     use common::test_allocator;
-    use mem_allocs::c_allocator::RawCAllocator;
+    use mem_allocs::RawCAllocator;
 
     test_allocator(RawCAllocator).unwrap();
 }

@@ -95,7 +95,6 @@ fn allocate_memory(size: usize, alignment: usize) -> Result<*mut u8, AllocError>
 }
 
 /// A custom memory allocator that interfaces with the C standard library's basic allocation functions (`malloc`/`free`).
-#[allow(clippy::module_name_repetitions)]
 pub struct RawCAllocator;
 
 unsafe impl Allocator for RawCAllocator {

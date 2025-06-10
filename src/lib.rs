@@ -1,5 +1,9 @@
 #![no_std]
-#![feature(allocator_api, cfg_select, slice_ptr_get)]
+#![feature(allocator_api, cfg_select)]
 
-#[cfg(feature = "c_allocator")]
-pub mod c_allocator;
+cfg_select! {
+    feature = "c_allocator" => {
+        mod c_allocator;
+        pub use c_allocator::*;
+    }
+}
