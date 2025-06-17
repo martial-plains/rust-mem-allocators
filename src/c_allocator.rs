@@ -21,7 +21,7 @@ unsafe impl Allocator for CAllocator {
     }
 
     unsafe fn deallocate(&self, allocated_ptr: NonNull<u8>, _: Layout) {
-        free(allocated_ptr.as_ptr().cast::<c_void>());
+        unsafe { free(allocated_ptr.as_ptr().cast::<c_void>()) };
     }
 }
 
@@ -32,24 +32,24 @@ unsafe impl GlobalAlloc for CAllocator {
     }
 
     unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
-        let allocated_ptr = self.alloc(layout);
+        let allocated_ptr = unsafe { self.alloc(layout) };
         if !allocated_ptr.is_null() {
-            ptr::write_bytes(allocated_ptr, 0, layout.size());
+            unsafe { ptr::write_bytes(allocated_ptr, 0, layout.size()) };
         }
         allocated_ptr
     }
 
     unsafe fn dealloc(&self, allocated_ptr: *mut u8, _: Layout) {
-        free(allocated_ptr.cast::<c_void>());
+        unsafe { free(allocated_ptr.cast::<c_void>()) };
     }
 
     unsafe fn realloc(&self, old_ptr: *mut u8, old_layout: Layout, new_size: usize) -> *mut u8 {
-        let new_layout = Layout::from_size_align_unchecked(new_size, old_layout.align());
-        let new_ptr = self.alloc(new_layout);
+        let new_layout = unsafe { Layout::from_size_align_unchecked(new_size, old_layout.align()) };
+        let new_ptr = unsafe { self.alloc(new_layout) };
         if !new_ptr.is_null() {
             let copy_size = cmp::min(old_layout.size(), new_size);
-            ptr::copy_nonoverlapping(old_ptr, new_ptr, copy_size);
-            self.dealloc(old_ptr, old_layout);
+            unsafe { ptr::copy_nonoverlapping(old_ptr, new_ptr, copy_size) };
+            unsafe { self.dealloc(old_ptr, old_layout) };
         }
         new_ptr
     }
@@ -108,7 +108,7 @@ unsafe impl Allocator for RawCAllocator {
     }
 
     unsafe fn deallocate(&self, allocated_ptr: NonNull<u8>, _: Layout) {
-        free(allocated_ptr.as_ptr().cast::<c_void>());
+        unsafe { free(allocated_ptr.as_ptr().cast::<c_void>()) };
     }
 }
 
@@ -118,24 +118,24 @@ unsafe impl GlobalAlloc for RawCAllocator {
     }
 
     unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
-        let allocated_ptr = self.alloc(layout);
+        let allocated_ptr = unsafe { self.alloc(layout) };
         if !allocated_ptr.is_null() {
-            ptr::write_bytes(allocated_ptr, 0, layout.size());
+            unsafe { ptr::write_bytes(allocated_ptr, 0, layout.size()) };
         }
         allocated_ptr
     }
 
     unsafe fn dealloc(&self, allocated_ptr: *mut u8, _: Layout) {
-        free(allocated_ptr.cast::<c_void>());
+        unsafe { free(allocated_ptr.cast::<c_void>()) };
     }
 
     unsafe fn realloc(&self, old_ptr: *mut u8, old_layout: Layout, new_size: usize) -> *mut u8 {
-        let new_layout = Layout::from_size_align_unchecked(new_size, old_layout.align());
-        let new_ptr = self.alloc(new_layout);
+        let new_layout = unsafe { Layout::from_size_align_unchecked(new_size, old_layout.align()) };
+        let new_ptr = unsafe { self.alloc(new_layout) };
         if !new_ptr.is_null() {
             let copy_size = cmp::min(old_layout.size(), new_size);
-            ptr::copy_nonoverlapping(old_ptr, new_ptr, copy_size);
-            self.dealloc(old_ptr, old_layout);
+            unsafe { ptr::copy_nonoverlapping(old_ptr, new_ptr, copy_size) };
+            unsafe { self.dealloc(old_ptr, old_layout) };
         }
         new_ptr
     }
