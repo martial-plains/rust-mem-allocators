@@ -9,6 +9,26 @@ use core::{
 use libc::{free, malloc};
 
 /// A custom memory allocator that interfaces with the C standard library's allocation functions.
+///
+/// ```
+/// use mem_allocs::CAllocator;
+///
+/// #[global_allocator]
+/// static GLOBAL_ALLOCATOR: CAllocator = CAllocator;
+///
+/// fn main() {
+///     let mut vector: Vec<usize> = Vec::with_capacity(100);
+///
+///     for index in 0..100 {
+///         vector.push(index);
+///     }
+///
+///     assert_eq!(vector.len(), 100);
+///     for (expected_index, actual_value) in vector.into_iter().enumerate().take(100) {
+///         assert_eq!(actual_value, expected_index);
+///     }
+/// }
+/// ```
 pub struct CAllocator;
 
 unsafe impl Allocator for CAllocator {
@@ -95,6 +115,26 @@ fn allocate_memory(size: usize, alignment: usize) -> Result<*mut u8, AllocError>
 }
 
 /// A custom memory allocator that interfaces with the C standard library's basic allocation functions (`malloc`/`free`).
+///
+/// ```
+/// use mem_allocs::RawCAllocator;
+///
+/// #[global_allocator]
+/// static GLOBAL_ALLOCATOR: RawCAllocator = RawCAllocator;
+///
+/// fn main() {
+///     let mut vector: Vec<usize> = Vec::with_capacity(100);
+///
+///     for index in 0..100 {
+///         vector.push(index);
+///     }
+///
+///     assert_eq!(vector.len(), 100);
+///     for (expected_index, actual_value) in vector.into_iter().enumerate().take(100) {
+///         assert_eq!(actual_value, expected_index);
+///     }
+/// }
+/// ```
 pub struct RawCAllocator;
 
 unsafe impl Allocator for RawCAllocator {
