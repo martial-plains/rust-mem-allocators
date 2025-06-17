@@ -4,8 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-default = ["c_allocator"]
+default = ["c_allocator", "arena_allocator"]
+arena_allocator = []
 c_allocator = ["libc"]
+
 
 [dependencies]
 libc = { version = "0.2.161", optional = true }
