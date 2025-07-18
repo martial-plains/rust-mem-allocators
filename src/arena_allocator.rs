@@ -15,10 +15,10 @@ use alloc::{vec, vec::Vec};
 /// ```
 /// #![feature(allocator_api)]
 ///
-/// use mem_allocs::ArenaAlloctor;
+/// use mem_allocs::ArenaAllocator;
 /// use core::alloc::{Allocator, Layout};
 ///
-/// let arena = ArenaAlloctor::new(1024);
+/// let arena = ArenaAllocator::new(1024);
 ///
 /// let layout = Layout::from_size_align(16, 8).unwrap();
 /// let ptr = arena.allocate(layout).unwrap();
@@ -49,9 +49,9 @@ impl ArenaAllocator {
     /// ```
     /// #![feature(allocator_api)]
     ///
-    /// use mem_allocs::ArenaAlloctor;
+    /// use mem_allocs::ArenaAllocator;
     ///
-    /// let arena = ArenaAlloctor::new(1024);
+    /// let arena = ArenaAllocator::new(1024);
     /// ```
     #[must_use]
     pub fn new(bytes: usize) -> Self {
@@ -77,10 +77,10 @@ impl ArenaAllocator {
     /// ```
     /// #![feature(allocator_api)]
     ///
-    /// use mem_allocs::ArenaAlloctor;
+    /// use mem_allocs::ArenaAllocator;
     /// use core::alloc::{Allocator, Layout};
     ///
-    /// let arena = ArenaAlloctor::new(1024);
+    /// let arena = ArenaAllocator::new(1024);
     /// let layout = Layout::from_size_align(32, 8).unwrap();
     /// let _ptr = arena.allocate(layout).unwrap();
     ///
@@ -148,7 +148,7 @@ mod tests {
     use alloc::vec::Vec;
 
     #[test]
-    /// Tests the `ArenaAlloctor` with a generic vector.
+    /// Tests the `ArenaAllocator` with a generic vector.
     fn test_generic_vector_with_arena_allocator() {
         let capacity = 800;
         let allocator = ArenaAllocator::new(capacity);
