@@ -6,7 +6,7 @@ mod common;
 #[cfg(feature = "arena_allocator")]
 fn arena_allocator() {
     use common::test_allocator;
-    use mem_allocs::ArenaAlloctor;
+    use mem_allocs::ArenaAllocator;
 
-    test_allocator(ArenaAlloctor::new(800)).unwrap()
+    test_allocator(ArenaAllocator::new(800)).unwrap();
 }

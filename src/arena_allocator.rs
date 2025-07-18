@@ -31,17 +31,18 @@ use alloc::{vec, vec::Vec};
 /// // You can allocate again now from the beginning of the buffer
 /// let ptr2 = arena.allocate(layout).unwrap();
 /// ```
-pub struct ArenaAlloctor {
-    buffer: UnsafeCell<Vec<MaybeUninit<usize>>>,
+#[derive(Debug, Default)]
+pub struct ArenaAllocator {
+    buffer: UnsafeCell<Vec<MaybeUninit<u8>>>,
     offset: UnsafeCell<usize>,
 }
 
-impl ArenaAlloctor {
-    /// Creates a new arena allocator with the given capacity in `usize` elements.
+impl ArenaAllocator {
+    /// Creates a new arena allocator with a given capacity in bytes.
     ///
     /// # Arguments
     ///
-    /// * `capacity` - Number of `usize`-sized elements the allocator can store.
+    /// * `bytes` - The number of bytes to reserve in the arena.
     ///
     /// # Example
     ///
@@ -53,8 +54,8 @@ impl ArenaAlloctor {
     /// let arena = ArenaAlloctor::new(1024);
     /// ```
     #[must_use]
-    pub fn new(capacity: usize) -> Self {
-        let vec = vec![MaybeUninit::uninit(); capacity];
+    pub fn new(bytes: usize) -> Self {
+        let vec = vec![MaybeUninit::<u8>::uninit(); bytes];
         Self {
             buffer: UnsafeCell::new(vec),
             offset: UnsafeCell::new(0),
@@ -95,9 +96,14 @@ impl ArenaAlloctor {
     const fn align_up(offset: usize, align: usize) -> usize {
         (offset + align - 1) & !(align - 1)
     }
+
+    /// Returns the total capacity in bytes.
+    pub fn capacity(&self) -> usize {
+        unsafe { (*self.buffer.get()).len() }
+    }
 }
 
-unsafe impl Allocator for ArenaAlloctor {
+unsafe impl Allocator for ArenaAllocator {
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, core::alloc::AllocError> {
         let buffer = unsafe { &mut *self.buffer.get() };
         let offset = unsafe { &mut *self.offset.get() };
@@ -115,15 +121,15 @@ unsafe impl Allocator for ArenaAlloctor {
         *offset = end;
 
         let ptr = unsafe { base_ptr.add(aligned_offset) };
-
         let slice = slice_from_raw_parts_mut(ptr, layout.size());
+
         Ok(unsafe { NonNull::new_unchecked(slice) })
     }
 
     unsafe fn deallocate(&self, _ptr: NonNull<u8>, _layout: Layout) {}
 }
 
-unsafe impl GlobalAlloc for ArenaAlloctor {
+unsafe impl GlobalAlloc for ArenaAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         self.allocate(layout).map_or_else(
             |_| null_mut(),
@@ -145,8 +151,8 @@ mod tests {
     /// Tests the `ArenaAlloctor` with a generic vector.
     fn test_generic_vector_with_arena_allocator() {
         let capacity = 800;
-        let allocator = ArenaAlloctor::new(capacity);
-        let mut vector: Vec<usize, ArenaAlloctor> = Vec::with_capacity_in(100, allocator);
+        let allocator = ArenaAllocator::new(capacity);
+        let mut vector: Vec<usize, ArenaAllocator> = Vec::with_capacity_in(100, allocator);
 
         for index in 0..100 {
             vector.push(index);
@@ -160,7 +166,7 @@ mod tests {
 
     #[test]
     fn allocate_and_reset() {
-        let arena = ArenaAlloctor::new(100);
+        let arena = ArenaAllocator::new(100);
 
         let layout = Layout::from_size_align(10, 4).unwrap();
         let ptr1 = arena.allocate(layout).expect("allocation 1 failed");
@@ -185,9 +191,9 @@ mod tests {
 
     #[test]
     fn allocation_fails_when_out_of_space() {
-        let arena = ArenaAlloctor::new(16); // small arena
+        let arena = ArenaAllocator::new(16);
 
-        let layout = Layout::from_size_align(16, 1).unwrap();
+        let layout = Layout::from_size_align(128, 1).unwrap();
         assert!(arena.allocate(layout).is_ok());
 
         let layout2 = Layout::from_size_align(1, 1).unwrap();

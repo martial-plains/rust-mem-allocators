@@ -29,42 +29,42 @@ use libc::{free, malloc};
 ///     }
 /// }
 /// ```
+#[derive(Debug, Default, Clone, Copy)]
 pub struct CAllocator;
 
 unsafe impl Allocator for CAllocator {
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         let alignment = layout.align().max(mem::size_of::<usize>());
         let size = layout.size();
-        let allocated_ptr = allocate_memory(size, alignment)?;
+        let ptr = allocate_memory(size, alignment)?;
 
-        NonNull::new(ptr::slice_from_raw_parts_mut(allocated_ptr, size)).ok_or(AllocError)
+        NonNull::new(ptr::slice_from_raw_parts_mut(ptr, size)).ok_or(AllocError)
     }
 
-    unsafe fn deallocate(&self, allocated_ptr: NonNull<u8>, _: Layout) {
-        unsafe { free(allocated_ptr.as_ptr().cast::<c_void>()) };
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, _: Layout) {
+        unsafe { free(ptr.as_ptr().cast::<c_void>()) };
     }
 }
 
 unsafe impl GlobalAlloc for CAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        let alignment = layout.align().max(mem::size_of::<usize>());
-        allocate_memory(layout.size(), alignment).unwrap_or(ptr::null_mut())
+        allocate_memory(layout.size(), layout.align()).unwrap_or(ptr::null_mut())
     }
 
     unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
-        let allocated_ptr = unsafe { self.alloc(layout) };
-        if !allocated_ptr.is_null() {
-            unsafe { ptr::write_bytes(allocated_ptr, 0, layout.size()) };
+        let ptr = unsafe { self.alloc(layout) };
+        if !ptr.is_null() {
+            unsafe { ptr::write_bytes(ptr, 0, layout.size()) };
         }
-        allocated_ptr
+        ptr
     }
 
-    unsafe fn dealloc(&self, allocated_ptr: *mut u8, _: Layout) {
-        unsafe { free(allocated_ptr.cast::<c_void>()) };
+    unsafe fn dealloc(&self, ptr: *mut u8, _: Layout) {
+        unsafe { free(ptr.cast::<c_void>()) };
     }
 
     unsafe fn realloc(&self, old_ptr: *mut u8, old_layout: Layout, new_size: usize) -> *mut u8 {
-        let new_layout = unsafe { Layout::from_size_align_unchecked(new_size, old_layout.align()) };
+        let new_layout = Layout::from_size_align(new_size, old_layout.align()).unwrap();
         let new_ptr = unsafe { self.alloc(new_layout) };
         if !new_ptr.is_null() {
             let copy_size = cmp::min(old_layout.size(), new_size);
@@ -81,8 +81,7 @@ unsafe impl GlobalAlloc for CAllocator {
 ///
 /// Returns an `AllocError` if the allocation fails.
 fn allocate_memory(size: usize, alignment: usize) -> Result<*mut u8, AllocError> {
-    cfg_select! {
-        any(
+    #[cfg(any(
         target_os = "dragonfly",
         target_os = "netbsd",
         target_os = "freebsd",
@@ -90,27 +89,33 @@ fn allocate_memory(size: usize, alignment: usize) -> Result<*mut u8, AllocError>
         target_os = "openbsd",
         target_os = "linux",
         target_os = "macos",
-        ) => {
-            let ptr = {
-            let mut temp_ptr: *mut u8 = ptr::null_mut();
-            let result = unsafe {
-                libc::posix_memalign((&raw mut temp_ptr).cast::<*mut c_void>(), alignment, size)
-            };
-            if result != 0 {
-                return Err(AllocError);
-            }
-            temp_ptr
-            };
+    ))]
+    {
+        let mut ptr: *mut c_void = core::ptr::null_mut();
+        let result = unsafe { libc::posix_memalign(&raw mut ptr, alignment, size) };
+        if result != 0 {
+            Err(AllocError)
+        } else {
+            Ok(ptr.cast::<u8>())
         }
-    _ => {
-        let ptr = unsafe { libc::memalign(alignment, size) as *mut u8 };
-    }
     }
 
-    if ptr.is_null() {
-        Err(AllocError)
-    } else {
-        Ok(ptr)
+    #[cfg(not(any(
+        target_os = "dragonfly",
+        target_os = "netbsd",
+        target_os = "freebsd",
+        target_os = "solaris",
+        target_os = "openbsd",
+        target_os = "linux",
+        target_os = "macos",
+    )))]
+    {
+        let ptr = unsafe { libc::memalign(alignment, size) as *mut u8 };
+        if ptr.is_null() {
+            Err(AllocError)
+        } else {
+            Ok(ptr)
+        }
     }
 }
 
@@ -135,6 +140,7 @@ fn allocate_memory(size: usize, alignment: usize) -> Result<*mut u8, AllocError>
 ///     }
 /// }
 /// ```
+#[derive(Debug, Default, Clone, Copy)]
 pub struct RawCAllocator;
 
 unsafe impl Allocator for RawCAllocator {
