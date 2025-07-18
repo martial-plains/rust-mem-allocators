@@ -191,7 +191,7 @@ mod tests {
 
     #[test]
     fn allocation_fails_when_out_of_space() {
-        let arena = ArenaAllocator::new(16);
+        let arena = ArenaAllocator::new(128);
 
         let layout = Layout::from_size_align(128, 1).unwrap();
         assert!(arena.allocate(layout).is_ok());
