@@ -195,7 +195,6 @@ mod tests {
     use alloc::vec::Vec;
 
     #[test]
-    /// Tests the `CAllocator` with a generic vector.
     fn test_generic_vector_with_c_allocator() {
         let allocator = CAllocator;
         let mut vector: Vec<usize, CAllocator> = Vec::with_capacity_in(100, allocator);
@@ -211,7 +210,6 @@ mod tests {
     }
 
     #[test]
-    /// Tests the `RawCAllocator` with a generic vector.
     fn test_generic_vector_with_raw_c_allocator() {
         let allocator = RawCAllocator;
         let mut vector: Vec<usize, RawCAllocator> = Vec::with_capacity_in(100, allocator);
