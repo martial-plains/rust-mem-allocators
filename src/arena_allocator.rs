@@ -33,7 +33,7 @@ use alloc::{vec, vec::Vec};
 /// ```
 #[derive(Debug, Default)]
 pub struct ArenaAllocator {
-    buffer: UnsafeCell<Vec<MaybeUninit<u8>>>,
+    buffer: UnsafeCell<Vec<MaybeUninit<usize>>>,
     offset: UnsafeCell<usize>,
 }
 
@@ -55,7 +55,7 @@ impl ArenaAllocator {
     /// ```
     #[must_use]
     pub fn new(bytes: usize) -> Self {
-        let vec = vec![MaybeUninit::<u8>::uninit(); bytes];
+        let vec = vec![MaybeUninit::<usize>::uninit(); bytes];
         Self {
             buffer: UnsafeCell::new(vec),
             offset: UnsafeCell::new(0),
@@ -94,7 +94,11 @@ impl ArenaAllocator {
 
     /// Aligns `offset` upwards to the next multiple of `align`.
     const fn align_up(offset: usize, align: usize) -> usize {
-        (offset + align - 1) & !(align - 1)
+        if align == 0 {
+            offset
+        } else {
+            (offset + (align - 1)) & !(align - 1)
+        }
     }
 
     /// Returns the total capacity in bytes.
@@ -108,7 +112,6 @@ unsafe impl Allocator for ArenaAllocator {
         let buffer = unsafe { &mut *self.buffer.get() };
         let offset = unsafe { &mut *self.offset.get() };
 
-        let base_ptr = buffer.as_mut_ptr().cast::<u8>();
         let aligned_offset = Self::align_up(*offset, layout.align());
         let end = aligned_offset
             .checked_add(layout.size())
@@ -120,6 +123,7 @@ unsafe impl Allocator for ArenaAllocator {
 
         *offset = end;
 
+        let base_ptr = buffer.as_mut_ptr().cast::<u8>();
         let ptr = unsafe { base_ptr.add(aligned_offset) };
         let slice = slice_from_raw_parts_mut(ptr, layout.size());
 
@@ -148,7 +152,6 @@ mod tests {
     use alloc::vec::Vec;
 
     #[test]
-    /// Tests the `ArenaAllocator` with a generic vector.
     fn test_generic_vector_with_arena_allocator() {
         let capacity = 800;
         let allocator = ArenaAllocator::new(capacity);
