@@ -13,7 +13,7 @@ c_allocator = ["libc"]
 libc = { version = "0.2.161", optional = true }
 
 [dev-dependencies]
-rand = "0.9.1"
+rand = "0.10.0"
 
 [lints.clippy]
 cognitive_complexity = "warn"
