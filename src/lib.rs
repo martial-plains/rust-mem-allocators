@@ -1,5 +1,5 @@
 #![no_std]
-#![feature(allocator_api, cfg_select, slice_ptr_get)]
+#![feature(allocator_api, slice_ptr_get)]
 
 extern crate alloc;
 
