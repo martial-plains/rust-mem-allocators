@@ -41,14 +41,19 @@ unsafe impl Allocator for CAllocator {
         NonNull::new(ptr::slice_from_raw_parts_mut(ptr, size)).ok_or(AllocError)
     }
 
-    unsafe fn deallocate(&self, ptr: NonNull<u8>, _: Layout) {
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+        if layout.size() == 0 {
+            return;
+        }
+
         unsafe { free(ptr.as_ptr().cast::<c_void>()) };
     }
 }
 
 unsafe impl GlobalAlloc for CAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        allocate_memory(layout.size(), layout.align()).unwrap_or(ptr::null_mut())
+        let alignment = layout.align().max(mem::size_of::<usize>());
+        allocate_memory(layout.size(), alignment).unwrap_or(ptr::null_mut())
     }
 
     unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
@@ -59,12 +64,17 @@ unsafe impl GlobalAlloc for CAllocator {
         ptr
     }
 
-    unsafe fn dealloc(&self, ptr: *mut u8, _: Layout) {
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        if layout.size() == 0 {
+            return;
+        }
+
         unsafe { free(ptr.cast::<c_void>()) };
     }
 
     unsafe fn realloc(&self, old_ptr: *mut u8, old_layout: Layout, new_size: usize) -> *mut u8 {
-        let new_layout = Layout::from_size_align(new_size, old_layout.align()).unwrap();
+        let alignment = old_layout.align().max(mem::size_of::<usize>());
+        let new_layout = Layout::from_size_align(new_size, alignment).unwrap();
         let new_ptr = unsafe { self.alloc(new_layout) };
         if !new_ptr.is_null() {
             let copy_size = cmp::min(old_layout.size(), new_size);
@@ -81,6 +91,10 @@ unsafe impl GlobalAlloc for CAllocator {
 ///
 /// Returns an `AllocError` if the allocation fails.
 fn allocate_memory(size: usize, alignment: usize) -> Result<*mut u8, AllocError> {
+    if size == 0 {
+        return Ok(ptr::NonNull::<u8>::dangling().as_ptr());
+    }
+
     #[cfg(any(
         target_os = "dragonfly",
         target_os = "netbsd",
